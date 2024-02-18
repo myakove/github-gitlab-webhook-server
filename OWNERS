@@ -2,5 +2,12 @@ approvers:
   - myakove
   - rnetser
 reviewers:
-  - myakove
-  - rnetser
+  any:
+      - myakove
+      - rnetser
+  files:
+    Dockerfile:
+        - myakove
+  folders:
+    github-webhook-server:
+        - myakove

@@ -5,6 +5,7 @@ import random
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 import requests
 import shortuuid
@@ -113,6 +114,8 @@ class GitHubApi:
         if self.pull_request:
             self.last_commit = self._get_last_commit()
             self.parent_committer = self.pull_request.user.login
+
+        self.owners_content = self.get_owners_content()
 
         self.supported_user_labels_str = "".join([f" * {label}\n" for label in USER_LABELS_DICT.keys()])
         self.welcome_msg = f"""
@@ -408,25 +411,47 @@ stderr: `{err}`
 """,
             )
 
-    @property
-    def owners_content(self):
+    def get_owners_content(self):
         try:
             owners_content = self.repository.get_contents("OWNERS")
-            return yaml.safe_load(owners_content.decoded_content)
+            self.owners_content = yaml.safe_load(owners_content.decoded_content)
         except UnknownObjectException:
             self.app.logger.error(f"{self.log_prefix} OWNERS file not found")
             return {}
 
     @property
     def reviewers(self):
-        return self.owners_content.get("reviewers", [])
+        bc_reviewers = self.owners_content.get("reviewers", [])
+        any_reviewers = self.owners_content.get("reviewers", {}).get("any", [])
+        return list(set(bc_reviewers if isinstance(bc_reviewers, list) else [] + any_reviewers))
+
+    @property
+    def files_reviewers(self):
+        return self.owners_content.get("reviewers", {}).get("files", {})
+
+    @property
+    def folders_reviewers(self):
+        return self.owners_content.get("reviewers", {}).get("folders", {})
 
     @property
     def approvers(self):
         return self.owners_content.get("approvers", [])
 
+    def list_changed_commit_files(self):
+        return [fd["filename"] for fd in self.last_commit.raw_data["files"]]
+
     def assign_reviewers(self):
-        for reviewer in self.reviewers:
+        changed_files = self.list_changed_commit_files()
+        reviewers_to_add = self.reviewers
+        for _file, _reviewers in self.files_reviewers.items():
+            if _file in changed_files:
+                reviewers_to_add.extend(_reviewers)
+
+        for _folder, _reviewers in self.folders_reviewers.items():
+            if [True for fl in changed_files if _folder in Path(fl).parent.parts]:
+                reviewers_to_add.extend(_reviewers)
+
+        for reviewer in reviewers_to_add:
             if reviewer != self.pull_request.user.login:
                 self.app.logger.info(f"{self.log_prefix} Adding reviewer {reviewer}")
                 try:

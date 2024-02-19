@@ -423,7 +423,7 @@ stderr: `{err}`
     def reviewers(self):
         bc_reviewers = self.owners_content.get("reviewers", [])
         any_reviewers = self.owners_content.get("reviewers", {}).get("any", [])
-        return list(set(bc_reviewers if isinstance(bc_reviewers, list) else [] + any_reviewers))
+        return list(set(bc_reviewers + any_reviewers))
 
     @property
     def files_reviewers(self):
@@ -448,7 +448,7 @@ stderr: `{err}`
                 reviewers_to_add.extend(_reviewers)
 
         for _folder, _reviewers in self.folders_reviewers.items():
-            if [True for fl in changed_files if _folder in Path(fl).parent.parts]:
+            if any(fl for fl in changed_files if _folder in Path(fl).parent.parts):
                 reviewers_to_add.extend(_reviewers)
 
         for reviewer in reviewers_to_add:

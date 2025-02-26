@@ -2,7 +2,7 @@ import contextlib
 import os
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable
 
 import github
 from github import Auth, Github, GithubIntegration
@@ -47,7 +47,7 @@ def get_branch_sampler(repo: Repository, branch_name: str) -> Branch:
 def set_branch_protection(
     branch: Branch,
     repository: Repository,
-    required_status_checks: List[str],
+    required_status_checks: list[str],
     github_api: Github,
 ) -> bool:
     logger = get_logger_with_params(name="github-repository-settings")
@@ -101,10 +101,10 @@ def set_repository_settings(repository: Repository) -> None:
 
 def get_required_status_checks(
     repo: Repository,
-    data: Dict[str, Any],
-    default_status_checks: List[str],
-    exclude_status_checks: List[str],
-) -> List[str]:
+    data: dict[str, Any],
+    default_status_checks: list[str],
+    exclude_status_checks: list[str],
+) -> list[str]:
     if data.get("tox"):
         default_status_checks.append("tox")
 
@@ -131,9 +131,9 @@ def get_required_status_checks(
     return default_status_checks
 
 
-def get_user_configures_status_checks(status_checks: Dict[str, Any]) -> Tuple[List[str], List[str]]:
-    include_status_checks: List[str] = []
-    exclude_status_checks: List[str] = []
+def get_user_configures_status_checks(status_checks: dict[str, Any]) -> tuple[list[str], list[str]]:
+    include_status_checks: list[str] = []
+    exclude_status_checks: list[str] = []
     if status_checks:
         include_status_checks = status_checks.get("include-runs", [])
         exclude_status_checks = status_checks.get("exclude-runs", [])
@@ -145,7 +145,7 @@ def set_repository_labels(repository: Repository) -> str:
     logger = get_logger_with_params(name="github-repository-settings")
 
     logger.info(f"Set repository {repository.name} labels")
-    repository_labels: Dict[str, Dict[str, Any]] = {}
+    repository_labels: dict[str, dict[str, Any]] = {}
     for label in repository.get_labels():
         repository_labels[label.name.lower()] = {
             "object": label,
@@ -173,10 +173,10 @@ def set_repositories_settings(config_: Config, github_api: Github) -> None:
 
     logger.info("Processing repositories")
     config_data = config_.data
-    default_status_checks: List[str] = config_data.get("default-status-checks", []) + [
+    default_status_checks: list[str] = config_data.get("default-status-checks", []) + [
         CAN_BE_MERGED_STR,
     ]
-    docker: Optional[Dict[str, str]] = config_data.get("docker")
+    docker: dict[str, str] = config_data.get("docker", {})
     if docker:
         logger.info("Login in to docker.io")
         docker_username: str = docker["username"]
@@ -201,13 +201,13 @@ def set_repositories_settings(config_: Config, github_api: Github) -> None:
 
 
 def set_repository(
-    data: Dict[str, Any], github_api: Github, default_status_checks: List[str]
-) -> Tuple[bool, str, Callable]:
+    data: dict[str, Any], github_api: Github, default_status_checks: list[str]
+) -> tuple[bool, str, Callable]:
     logger = get_logger_with_params(name="github-repository-settings")
 
     repository: str = data["name"]
     logger.info(f"Processing repository {repository}")
-    protected_branches: Dict[str, Any] = data.get("protected-branches", {})
+    protected_branches: dict[str, Any] = data.get("protected-branches", {})
     repo = _get_github_repo_api(github_api=github_api, repository=repository)
     if not repo:
         return False, f"{repository}: Failed to get repository", logger.error
@@ -219,7 +219,7 @@ def set_repository(
         if repo.private:
             return False, f"{repository}: Repository is private, skipping setting branch settings", logger.warning
 
-        futures: List["Future"] = []
+        futures: list["Future"] = []
 
         with ThreadPoolExecutor() as executor:
             for branch_name, status_checks in protected_branches.items():
@@ -272,7 +272,7 @@ def set_all_in_progress_check_runs_to_queued(config_: Config, github_api: Github
         BUILD_CONTAINER_STR,
         PRE_COMMIT_STR,
     )
-    futures: List["Future"] = []
+    futures: list["Future"] = []
 
     with ThreadPoolExecutor() as executor:
         for _, data in config_.data["repositories"].items():
@@ -292,8 +292,8 @@ def set_all_in_progress_check_runs_to_queued(config_: Config, github_api: Github
 
 
 def set_repository_check_runs_to_queued(
-    config_: Config, data: Dict[str, Any], github_api: Github, check_runs: Tuple[str]
-) -> Tuple[bool, str, Callable]:
+    config_: Config, data: dict[str, Any], github_api: Github, check_runs: tuple[str]
+) -> tuple[bool, str, Callable]:
     logger = get_logger_with_params(name="github-repository-settings")
 
     repository: str = data["name"]
@@ -325,7 +325,7 @@ def set_repository_check_runs_to_queued(
     return True, f"{repository}: Set check run status to {QUEUED_STR} is done", logger.debug
 
 
-def get_repository_github_app_api(config_: Config, repository_name: str) -> Optional[Github]:
+def get_repository_github_app_api(config_: Config, repository_name: str) -> Github | None:
     logger = get_logger_with_params(name="github-repository-settings")
 
     logger.debug("Getting repositories GitHub app API")

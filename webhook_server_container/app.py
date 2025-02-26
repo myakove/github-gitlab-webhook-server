@@ -1,12 +1,10 @@
-from typing import Any, Dict
 import os
 import sys
+from typing import Any, Dict
 
-from fastapi import Request
 import requests
 import urllib3
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from webhook_server_container.libs.github_api import ProcessGithubWehook
 from webhook_server_container.utils.helpers import get_logger_with_params
@@ -46,12 +44,13 @@ async def process_webhook(request: Request) -> Dict[str, Any]:
 
     except Exception as exp:
         logger.error(f"Error: {exp}")
-        exc_type, exc_obj, exc_tb = sys.exc_info()  # noqa: F841
+        exc_type, _, exc_tb = sys.exc_info()  # noqa: F841
         msg = f"Error: {exc_type}"
 
         if exc_tb is not None:
             file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)
             msg = f"Error: {exc_type}, File: {file_name}, Line: {exc_tb.tb_lineno}"
+            logger.error(msg)
 
         return {
             "status": requests.codes.server_error,

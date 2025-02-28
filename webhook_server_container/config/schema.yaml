@@ -51,6 +51,18 @@ properties:
       token:
         type: string
         format: password
+  strict:
+    type: boolean
+  require_code_owner_reviews:
+    type: boolean
+  dismiss_stale_reviews:
+    type: boolean
+  required_approving_review_count:
+    type: integer
+  required_linear_history:
+    type: boolean
+  required_conversation_resolution:
+    type: boolean
   repositories:
     type: object
     properties:
@@ -141,6 +153,18 @@ properties:
           type: array
           items:
             type: string
+        strict:
+          type: boolean
+        require_code_owner_reviews:
+          type: boolean
+        dismiss_stale_reviews:
+          type: boolean
+        required_approving_review_count:
+          type: integer
+        required_linear_history:
+          type: boolean
+        required_conversation_resolution:
+          type: boolean
   can-be-merged-required-labels:
     type: array
     items:
